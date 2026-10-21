@@ -1,0 +1,29 @@
+# 코드를 올릴 때마다 GitHub의 맥에서 빌드하고 계산 규칙 검사를 돌려요.
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  mac:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift 버전
+        run: xcrun swiftc --version
+      - name: 계산 규칙 검사
+        run: |
+          xcrun swiftc -swift-version 5 -o /tmp/chagok-tests \
+            Sources/Models.swift Sources/Calc.swift Sources/Sync.swift Sources/Parser.swift Sources/SampleData.swift \
+            Tests/main.swift
+          /tmp/chagok-tests
+      - name: 앱 빌드
+        run: CHAGOK_CI=1 bash build.sh
+      - name: 앱 실행 확인 (5초)
+        run: |
+          "dist/차곡.app/Contents/MacOS/Chagok" &
+          PID=$!
+          sleep 5
+          if kill -0 $PID 2>/dev/null; then echo "실행 중 ✅"; kill $PID; else echo "앱이 바로 종료됐어요 ❌"; exit 1; fi
