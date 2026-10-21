@@ -210,10 +210,10 @@ struct DFButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) var enabled
 
     func makeBody(configuration: Configuration) -> some View {
-        Body(kind: kind, small: small, enabled: enabled, configuration: configuration)
+        StyledButton(kind: kind, small: small, enabled: enabled, configuration: configuration)
     }
 
-    private struct Body: View {
+    private struct StyledButton: View {
         var kind: DFButtonKind
         var small: Bool
         var enabled: Bool
