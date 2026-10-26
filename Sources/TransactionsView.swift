@@ -147,7 +147,7 @@ struct TransactionsView: View {
     func exportCSV() {
         let p = NSSavePanel()
         p.allowedContentTypes = [.commaSeparatedText]
-        p.nameFieldStringValue = "차곡-\(state.month).csv"
+        p.nameFieldStringValue = "Chack-\(state.month).csv"
         if p.runModal() == .OK, let u = p.url {
             do { try store.csv(month: state.month).write(to: u); store.toast = "CSV로 내보냈어요." }
             catch { store.toast = "내보내지 못했어요: \(error.localizedDescription)" }

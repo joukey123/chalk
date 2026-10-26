@@ -79,7 +79,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(store.isICloud ? "iCloud Drive › \(store.folder?.lastPathComponent ?? "") › \(Store.fileName)" : (store.fileURL?.path ?? "예시 모드"))
                             .font(T.sans(14, 600)).foregroundStyle(DF.ink).textSelection(.enabled)
-                        Text(store.isICloud ? "아이폰의 파일 앱 › iCloud Drive › 차곡 에서도 같은 파일이 보여요." : "iCloud Drive 밖이라 아이폰과는 공유되지 않아요.")
+                        Text(store.isICloud ? "아이폰의 파일 앱 › iCloud Drive › \(store.folder?.lastPathComponent ?? "") 에서도 같은 파일이 보여요." : "iCloud Drive 밖이라 아이폰과는 공유되지 않아요.")
                             .font(T.sans(12)).foregroundStyle(DF.helper)
                     }
                     Spacer()
@@ -241,7 +241,7 @@ struct SettingsView: View {
                         .dfButton(.secondary, small: true).disabled(store.demo || store.folder == nil)
                     Spacer()
                 }
-                Text("백업 불러오기는 지금 기록을 바꿔치기해요. 불러오기 전에 지금 기록을 ‘백업’ 폴더에 자동으로 남겨둬요. 웹 버전 차곡에서 만든 백업 파일도 불러올 수 있어요.")
+                Text("백업 불러오기는 지금 기록을 바꿔치기해요. 불러오기 전에 지금 기록을 ‘백업’ 폴더에 자동으로 남겨둬요. 웹 버전 차곡 가계부에서 만든 백업 파일도 불러올 수 있어요.")
                     .font(T.sans(12)).foregroundStyle(DF.helper).fixedSize(horizontal: false, vertical: true)
                 Divider1()
                 HStack {
@@ -261,7 +261,7 @@ struct SettingsView: View {
         let p = NSSavePanel()
         p.allowedContentTypes = [.json]
         let f = DateFormatter(); f.dateFormat = "yyyyMMdd"; f.timeZone = DateUtil.tz
-        p.nameFieldStringValue = "차곡-백업-\(f.string(from: Date())).json"
+        p.nameFieldStringValue = "Chack-백업-\(f.string(from: Date())).json"
         if p.runModal() == .OK, let u = p.url {
             do { try store.backupData().write(to: u, options: .atomic); store.toast = "백업 파일을 만들었어요." }
             catch { store.toast = "백업하지 못했어요: \(error.localizedDescription)" }
@@ -275,7 +275,7 @@ struct SettingsView: View {
         guard p.runModal() == .OK, let u = p.url else { return }
         guard let read = Store.readBackup(u) else {
             let a = NSAlert(); a.messageText = "읽을 수 없는 파일이에요"
-            a.informativeText = "차곡 백업 파일이나 웹 버전 백업 파일인지 확인해주세요. 지금 기록은 바뀌지 않았어요."
+            a.informativeText = "Chack! 백업 파일이나 웹 버전 백업 파일인지 확인해주세요. 지금 기록은 바뀌지 않았어요."
             a.runModal(); return
         }
         let (incoming, note) = read
@@ -299,8 +299,9 @@ struct SettingsView: View {
                 AppMark().frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 8) {
-                        Text("차곡 · 월간 가계부").font(T.sans(15, 700)).foregroundStyle(DF.ink)
+                        Text("Chack! · 월간 가계부").font(T.sans(15, 700)).foregroundStyle(DF.ink)
                         Pill(text: "v\(AppInfo.version)")
+                        Pill(text: Updater.builtArch == "x86_64" ? "Intel" : "Apple Silicon")
                     }
                     Text(updater.status).font(T.sans(12)).foregroundStyle(updater.available != nil ? DF.secondary : DF.helper)
                         .fixedSize(horizontal: false, vertical: true)
@@ -311,8 +312,8 @@ struct SettingsView: View {
                 } else {
                     Button("업데이트 확인") { Task { await updater.check(silent: false) } }.dfButton(.ghost, small: true).disabled(updater.busy)
                 }
-                Button { NSWorkspace.shared.open(URL(string: "https://github.com/\(AppInfo.repo)")!) } label: { Image(systemName: "arrow.up.right.square") }
-                    .dfButton(.ghost, small: true).help("GitHub 저장소 열기")
+                Button { NSWorkspace.shared.open(URL(string: "https://github.com/\(AppInfo.releaseRepo)/releases")!) } label: { Image(systemName: "arrow.up.right.square") }
+                    .dfButton(.ghost, small: true).help("배포 페이지 열기")
             }
         }
     }

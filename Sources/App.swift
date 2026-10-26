@@ -3,7 +3,7 @@ import AppKit
 
 enum AppInfo {
     static var version: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev" }
-    static let repo = "joukey123/chalk"
+    static let releaseRepo = "joukey123/chack-release"
 }
 
 enum Page: String, CaseIterable, Identifiable {
@@ -51,7 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 @main
 @MainActor
-struct ChagokApp: App {
+struct ChackApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject var store: Store
     @StateObject var state = AppState()
@@ -63,7 +63,7 @@ struct ChagokApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("차곡") {
+        WindowGroup("Chack!") {
             RootView()
                 .environmentObject(store)
                 .environmentObject(state)
@@ -169,7 +169,7 @@ struct Sidebar: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
                 AppMark().frame(width: 28, height: 28)
-                Text("차곡").font(T.sans(18, 800)).foregroundStyle(DF.ink)
+                Text("Chack!").font(T.number(19, 800)).foregroundStyle(DF.ink)
                 Pill(text: "v\(AppInfo.version)")
                 Spacer()
             }
@@ -256,7 +256,7 @@ struct Sidebar: View {
             } else {
                 HStack(spacing: 6) {
                     Image(systemName: store.isICloud ? "icloud" : "internaldrive").foregroundStyle(DF.primary)
-                    Text(store.isICloud ? "iCloud Drive · 차곡" : (store.folder?.lastPathComponent ?? "")).font(T.sans(13, 600)).foregroundStyle(DF.ink)
+                    Text(store.isICloud ? "iCloud Drive · \(store.folder?.lastPathComponent ?? "")" : (store.folder?.lastPathComponent ?? "")).font(T.sans(13, 600)).foregroundStyle(DF.ink)
                 }
                 Text(savedText).font(T.sans(12)).foregroundStyle(DF.helper)
                 if let n = store.lastSyncNote { Text(n).font(T.sans(12)).foregroundStyle(DF.success).lineLimit(2) }
@@ -275,17 +275,19 @@ struct Sidebar: View {
     }
 }
 
-/// 앱 표시: 차곡차곡 쌓인 막대
+/// 앱 표시 (앱 아이콘 그림을 둥근 사각형으로)
 struct AppMark: View {
+    static let image: NSImage? = Bundle.main.url(forResource: "Mark", withExtension: "png").flatMap { NSImage(contentsOf: $0) }
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 7).fill(DF.primary)
-            VStack(spacing: 2.5) {
-                Capsule().fill(.white.opacity(0.55)).frame(width: 10, height: 3.5)
-                Capsule().fill(.white.opacity(0.8)).frame(width: 14, height: 3.5)
-                Capsule().fill(.white).frame(width: 18, height: 3.5)
+        GeometryReader { g in
+            Group {
+                if let img = AppMark.image {
+                    Image(nsImage: img).resizable().interpolation(.high)
+                } else {
+                    Color(hex: 0xFC4B0B)
+                }
             }
-            .offset(y: 1)
+            .clipShape(RoundedRectangle(cornerRadius: g.size.width * 0.225, style: .continuous))
         }
     }
 }
@@ -359,13 +361,13 @@ struct SetupView: View {
             VStack(alignment: .leading, spacing: 24) {
                 AppMark().frame(width: 52, height: 52)
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("차곡 · 월간 가계부").font(T.display).foregroundStyle(DF.ink)
+                    Text("Chack! · 월간 가계부").font(T.display).foregroundStyle(DF.ink)
                     Text("기록은 서버가 아니라 내 기기와 내 iCloud Drive에만 저장돼요.\n맥과 아이폰이 같은 가계부 파일 하나를 함께 사용해요.")
                         .font(T.bodyLarge).foregroundStyle(DF.tertiary).lineSpacing(6)
                 }
                 VStack(spacing: 12) {
                     option(icon: "icloud", title: "iCloud Drive에 저장 (추천)",
-                           text: Store.iCloudAvailable ? "iCloud Drive › 차곡 › 가계부.json — 아이폰 앱과 함께 쓸 수 있어요."
+                           text: Store.iCloudAvailable ? "iCloud Drive › \(Store.defaultFolder.lastPathComponent) › 가계부.json — 아이폰 앱과 함께 쓸 수 있어요."
                                                        : "이 맥에서 iCloud Drive가 켜져 있지 않아요. 시스템 설정 › Apple 계정 › iCloud에서 켜주세요.",
                            primary: true, enabled: Store.iCloudAvailable) {
                         store.useFolder(Store.defaultFolder)

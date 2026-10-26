@@ -183,7 +183,7 @@ struct Ledger: Codable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         format = (try? c.decode(String.self, forKey: .format)) ?? ""
         guard format == "chagok-ledger" else {
-            throw NSError(domain: "Chagok", code: 1, userInfo: [NSLocalizedDescriptionKey: "차곡 가계부 파일이 아니에요."])
+            throw NSError(domain: "Chagok", code: 1, userInfo: [NSLocalizedDescriptionKey: "Chack! 가계부 파일이 아니에요."])
         }
         version = (try? c.decode(Int.self, forKey: .version)) ?? 1
         transactions = try c.decode([Transaction].self, forKey: .transactions)

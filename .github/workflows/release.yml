@@ -1,5 +1,6 @@
-# version.json의 버전이 바뀌면 Release(v버전)를 만들고 Chagok.zip을 올려요.
-# 앱의 '업데이트 설치'와 README 설치 링크가 이 파일을 받아요. 다운로드 횟수도 여기서 집계돼요.
+# version.json의 버전을 올리면: 두 칩용 DMG를 빌드해서 공개 배포 저장소(chack-release)에 Release로 올려요.
+# 앱의 업데이트 버튼은 그 Release의 DMG를 받아요.
+# 필요: 이 저장소 Secrets에 RELEASE_TOKEN (chack-release에 Contents 쓰기 권한이 있는 토큰)
 name: release
 
 on:
@@ -8,27 +9,34 @@ on:
     paths: [version.json]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  release:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  publish:
+    needs: build
     runs-on: ubuntu-latest
+    env:
+      RELEASE_REPO: joukey123/chack-release
     steps:
       - uses: actions/checkout@v4
-      - name: 버전 읽기
-        id: v
-        run: |
-          echo "version=$(jq -r .version version.json)" >> "$GITHUB_OUTPUT"
-          echo "notes=$(jq -r '.notes // ""' version.json)" >> "$GITHUB_OUTPUT"
-      - name: Release 만들기
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: 공개 저장소에 Release 올리기
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
-          TAG="v${{ steps.v.outputs.version }}"
-          if gh release view "$TAG" >/dev/null 2>&1; then echo "$TAG 이미 있음"; exit 0; fi
-          mkdir -p out/Chagok
-          git archive HEAD | tar -x -C out/Chagok
-          (cd out && zip -qr Chagok.zip Chagok)
-          gh release create "$TAG" out/Chagok.zip --title "차곡 ${{ steps.v.outputs.version }}" \
-            --notes "${{ steps.v.outputs.notes }}" --target "$GITHUB_SHA" --latest
+          if [ -z "$GH_TOKEN" ]; then echo "::error::RELEASE_TOKEN 비밀값이 없어요. 저장소 Settings › Secrets › Actions에 추가해주세요."; exit 1; fi
+          V=$(jq -r .version version.json)
+          NOTES=$(jq -r '.notes // ""' version.json)
+          ls -la out
+          if gh release view "v$V" --repo "$RELEASE_REPO" >/dev/null 2>&1; then
+            echo "v$V 이미 있음 → 파일만 교체"
+            gh release upload "v$V" out/*.dmg --repo "$RELEASE_REPO" --clobber
+          else
+            BODY=$(printf '%s\n\n**설치 파일**\n- 애플 실리콘(M1~M4 등): `Chack-AppleSilicon.dmg`\n- 인텔 맥: `Chack-Intel.dmg`\n\n이미 설치했다면 앱의 설정 › 업데이트 설치로 바로 바꿀 수 있어요.' "$NOTES")
+            gh release create "v$V" out/*.dmg --repo "$RELEASE_REPO" --title "Chack! $V" --notes "$BODY" --latest
+          fi
+          echo "::notice::https://github.com/$RELEASE_REPO/releases/tag/v$V"

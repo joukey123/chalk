@@ -1,54 +1,31 @@
-# 차곡 · 월간 가계부 (맥)
+# Chack! · 월간 가계부 (소스 · 비공개)
 
-서버 없이 **내 맥과 내 iCloud Drive에만** 저장하는 개인 가계부예요.
-카드 이용내역·영수증을 사진이나 PDF로 올리면 맥 안에서 읽어 기록하고, 매달 입금·지출과 카드값을 정리해줘요.
+서버 없이 **내 맥과 내 iCloud Drive에만** 저장하는 개인 가계부 맥 앱의 소스예요.
+설치 파일과 업데이트는 공개 저장소 **[joukey123/chack-release](https://github.com/joukey123/chack-release)** 에서 배포해요.
 
-## 설치
+## 새 버전 내는 법
 
-1. [최신 Release](https://github.com/joukey123/chalk/releases/latest)에서 **Chagok.zip**을 받아요 (다운로드 폴더에 저장).
-2. 터미널을 열고 붙여넣어요:
-   ```bash
-   cd ~/Downloads && unzip -o Chagok.zip && bash Chagok/build.sh
-   ```
-3. "명령어 도구 설치" 창이 뜨면 설치하고, 끝나면 2번을 한 번 더 실행해요.
-4. 앱이 자동으로 열려요. 다음부터는 Spotlight(⌘+Space)에서 **차곡**으로 실행해요.
+1. 코드를 고쳐 main에 올려요. → `build` 워크플로가 검사·빌드·DMG 실행 확인을 해요.
+2. `version.json`의 `version`과 `notes`를 바꿔 main에 올려요.
+3. `release` 워크플로가 애플 실리콘·인텔 DMG를 만들어 chack-release에 `v버전` Release로 올려요.
+4. 설치된 앱은 설정 › 업데이트 확인에서 새 버전을 찾아 자동으로 바꿔 끼워요.
 
-macOS 13 이상이 필요해요. 업데이트는 앱의 **설정 → 업데이트 설치**로 할 수 있어요.
+필요한 비밀값: `RELEASE_TOKEN` — chack-release 저장소에 **Contents: Read and write** 권한이 있는 fine-grained 토큰.
+
+## 구성
+
+```
+Sources/              SwiftUI 앱 (swiftc로 바로 컴파일, Xcode 프로젝트 없음)
+Tests/main.swift      계산 규칙 검사
+Resources/            앱 아이콘(AppIcon.png), 사이드바 표시(Mark.png), 글꼴(SIL OFL)
+scripts/build-app.sh  arm64 | x86_64 앱 번들 빌드 → dist/<arch>/Chack!.app
+scripts/make-dmg.sh   arm64 | x86_64 → dist/Chack-AppleSilicon.dmg | dist/Chack-Intel.dmg
+build.sh              개발용: 이 맥에서 빌드해 바로 /Applications에 설치
+```
 
 ## 저장 방식
 
-- 처음 실행할 때 **iCloud Drive › 차곡 › 가계부.json**을 만들어요. 모든 기록과 설정이 이 파일 하나에 들어가요.
-- 저장할 때마다 `차곡/백업/`에 1시간 단위 사본을 남겨요 (최근 72개).
-- 아이폰 앱(예정)도 같은 파일을 써요. 두 기기에서 동시에 고쳐도 기록을 합쳐서 저장해요.
-- **설정 → 백업 파일 만들기 / 백업 불러오기**로 JSON 백업을 직접 관리할 수 있어요. 웹 버전 차곡 백업도 불러올 수 있어요.
-- 개발자 서버나 GitHub로는 아무 기록도 보내지 않아요. 인터넷은 업데이트 확인에만 써요.
-
-## 기능
-
-| 화면 | 내용 |
-| --- | --- |
-| 월간 요약 | 한줄평, 총 입금·총 지출·카드 청구 예상·예산 잔액, 누적 지출(지난달 비교), 카테고리 비중, 예정된 돈의 흐름, 하루 예산 |
-| 입금·지출 | 추가·수정·삭제·복제, 검색(⌘F)·필터, 사진·PDF로 기록, 월별 CSV |
-| 카드 관리 | 카드별 청구 예상, 결제일, 진행 중인 할부와 남은 할부금 |
-| 예산 관리 | 전체·카테고리별 예산과 사용률 |
-| 설정 | 저장 위치, 월급 자동 기입, 카드, 고정지출, 백업·복원, 예시 가계부, 업데이트 |
-
-계산 기준은 웹 버전과 같아요: 한 달은 1일~말일(사용일 기준), 카드대금 납부·내 계좌 이체는 합계에서 제외, 환불은 지출에서 차감, 할부는 구매한 달 지출에 총액·청구 예상에는 회차별로.
-
-## 사진·PDF 인식
-
-- 맥 내장 문자 인식(Vision)과 PDFKit을 써서 **인터넷 없이** 읽어요.
-- 글자가 있는 PDF는 글자를 그대로 읽고, 스캔 PDF는 페이지를 이미지로 바꿔 읽어요.
-- 비밀번호 PDF는 비밀번호를 물어보고 저장하지 않아요. 원본 파일도 저장하지 않아요.
-- 저장 전에 날짜·상호명·금액·카테고리·할부를 확인하고 고칠 수 있어요. 이미 있는 기록과 같은 건 중복으로 표시해요.
-
-## 개발
-
-```
-Sources/     SwiftUI 앱 (빌드 도구 없이 swiftc로 컴파일)
-Tests/       계산 규칙 검사 (GitHub Actions에서 실행)
-Tools/       아이콘 생성
-Resources/   글꼴 (Pretendard, Plus Jakarta Sans, Fira Code — 모두 SIL OFL)
-```
-
-새 버전을 내려면 `version.json`의 버전을 올려 main에 올리면 GitHub이 Release를 자동으로 만들어요.
+- 기본 위치: `iCloud Drive/Chack/가계부.json` (예전 이름 `차곡` 폴더에 가계부가 있으면 그대로 사용)
+- 저장할 때마다 `백업/`에 1시간 단위 사본 (최근 72개)
+- 맥·아이폰이 같은 파일을 써도 수정 시각·삭제 기록으로 합쳐서 저장
+- 번들 ID `com.joukey123.chack` (예전 `com.joukey123.chagok`의 저장 위치 설정을 이어받음)

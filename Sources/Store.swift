@@ -27,15 +27,28 @@ final class Store: ObservableObject {
             .appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs", isDirectory: true)
     }
     static var iCloudAvailable: Bool { FileManager.default.fileExists(atPath: iCloudRoot.path) }
+    /// 새 기본 폴더는 iCloud Drive/Chack. 예전 이름(차곡) 폴더에 가계부가 있으면 그대로 사용
     static var defaultFolder: URL {
-        iCloudAvailable ? iCloudRoot.appendingPathComponent("차곡", isDirectory: true)
-            : FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("차곡", isDirectory: true)
+        let base = iCloudAvailable ? iCloudRoot
+            : FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let legacy = base.appendingPathComponent("차곡", isDirectory: true)
+        let fm = FileManager.default
+        if fm.fileExists(atPath: legacy.appendingPathComponent(fileName).path)
+            || fm.fileExists(atPath: legacy.appendingPathComponent("." + fileName + ".icloud").path) {
+            return legacy
+        }
+        return base.appendingPathComponent("Chack", isDirectory: true)
     }
 
     var fileURL: URL? { folder?.appendingPathComponent(Store.fileName) }
     var isICloud: Bool { folder?.path.hasPrefix(Store.iCloudRoot.path) ?? false }
 
     init() {
+        // 예전 앱(차곡, com.joukey123.chagok)에서 고른 저장 위치를 이어받음
+        if UserDefaults.standard.string(forKey: "folderPath") == nil,
+           let old = UserDefaults(suiteName: "com.joukey123.chagok")?.string(forKey: "folderPath") {
+            UserDefaults.standard.set(old, forKey: "folderPath")
+        }
         if let p = UserDefaults.standard.string(forKey: "folderPath") {
             folder = URL(fileURLWithPath: p, isDirectory: true)
             load()
@@ -239,7 +252,7 @@ final class Store: ObservableObject {
     static func readBackup(_ url: URL) -> (Ledger, String)? {
         guard let data = try? Data(contentsOf: url) else { return nil }
         if let l = try? JSONDecoder().decode(Ledger.self, from: data) {
-            return (l, "차곡 백업: 거래 \(l.transactions.count)건, 카드 \(l.settings.cards.count)개")
+            return (l, "Chack! 백업: 거래 \(l.transactions.count)건, 카드 \(l.settings.cards.count)개")
         }
         if let r = WebImport.parse(data) { return (r.ledger, r.note) }
         return nil
